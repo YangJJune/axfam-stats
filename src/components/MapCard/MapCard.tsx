@@ -1,5 +1,6 @@
 import React from "react";
 import styled from "styled-components";
+import { useNavigate, useParams } from "react-router-dom";
 import type { MapStats } from "../../types";
 import { getMapInfo } from "../../config/mapConfig";
 
@@ -13,6 +14,7 @@ const Card = styled.div`
   border-radius: ${({ theme }) => theme.borderRadius.lg};
   overflow: hidden;
   transition: all 0.2s ease;
+  cursor: pointer;
 
   &:hover {
     border-color: ${({ theme }) => theme.colors.accent.cyan};
@@ -84,9 +86,17 @@ const WinRate = styled.div<{ $winRate: number }>`
 export const MapCard: React.FC<MapCardProps> = ({ mapStat }) => {
   const mapInfo = getMapInfo(mapStat.map);
   const [imageError, setImageError] = React.useState(false);
+  const navigate = useNavigate();
+  const { playerId } = useParams<{ playerId: string }>();
+
+  const handleClick = () => {
+    if (playerId) {
+      navigate(`/player/${playerId}/map/${mapStat.map}`);
+    }
+  };
 
   return (
-    <Card>
+    <Card onClick={handleClick}>
       <ThumbnailContainer>
         {mapInfo.thumbnail && !imageError ? (
           <Thumbnail
