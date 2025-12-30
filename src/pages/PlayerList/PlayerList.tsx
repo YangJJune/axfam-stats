@@ -18,7 +18,50 @@ const Container = styled.div`
 `;
 
 const SearchBar = styled.div`
+  margin-bottom: ${({ theme }) => theme.spacing.md};
+`;
+
+const TierTabs = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing.sm};
   margin-bottom: ${({ theme }) => theme.spacing.xl};
+  overflow-x: auto;
+
+  &::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: ${({ theme }) => theme.colors.background.secondary};
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: ${({ theme }) => theme.colors.accent.cyan};
+    border-radius: 2px;
+  }
+`;
+
+const TierTab = styled.button<{ $active: boolean }>`
+  padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.lg};
+  background-color: ${({ $active, theme }) =>
+    $active ? theme.colors.accent.cyan : theme.colors.background.tertiary};
+  color: ${({ $active, theme }) =>
+    $active ? theme.colors.background.primary : theme.colors.text.secondary};
+  border: 1px solid
+    ${({ $active, theme }) =>
+      $active ? theme.colors.accent.cyan : "rgba(255, 255, 255, 0.1)"};
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  font-weight: ${({ $active, theme }) =>
+    $active ? theme.fontWeight.semibold : theme.fontWeight.normal};
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+
+  &:hover {
+    background-color: ${({ $active, theme }) =>
+      $active ? theme.colors.accent.cyan : theme.colors.background.secondary};
+  }
 `;
 
 const SearchInput = styled.input`
@@ -163,6 +206,7 @@ const ErrorContainer = styled(LoadingContainer)`
 export const PlayerList: React.FC = () => {
   const { playerSummaries, loading, error } = useData();
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTier, setSelectedTier] = useState<string>("전체");
   const [sortKey, setSortKey] = useState<SortKey>("totalGames");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const navigate = useNavigate();
@@ -177,9 +221,18 @@ export const PlayerList: React.FC = () => {
   };
 
   const sortedAndFilteredPlayers = useMemo(() => {
-    let filtered = playerSummaries.filter((player) =>
-      player.displayName.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    let filtered = playerSummaries.filter((player) => {
+      // 검색어 필터
+      const matchesSearch = player.displayName
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+
+      // 티어 필터
+      const matchesTier =
+        selectedTier === "전체" || player.tier === selectedTier;
+
+      return matchesSearch && matchesTier;
+    });
 
     filtered.sort((a, b) => {
       let aValue: any = a[sortKey];
@@ -201,7 +254,7 @@ export const PlayerList: React.FC = () => {
     });
 
     return filtered;
-  }, [playerSummaries, searchQuery, sortKey, sortOrder]);
+  }, [playerSummaries, searchQuery, selectedTier, sortKey, sortOrder]);
 
   if (loading) {
     return <LoadingContainer>데이터를 불러오는 중...</LoadingContainer>;
@@ -213,6 +266,8 @@ export const PlayerList: React.FC = () => {
     );
   }
 
+  const tiers = ["전체", "G", "0", "1", "2", "3", "4"];
+
   return (
     <Container>
       <SearchBar>
@@ -223,6 +278,18 @@ export const PlayerList: React.FC = () => {
           onChange={(e) => setSearchQuery(e.target.value)}
         />
       </SearchBar>
+
+      <TierTabs>
+        {tiers.map((tier) => (
+          <TierTab
+            key={tier}
+            $active={selectedTier === tier}
+            onClick={() => setSelectedTier(tier)}
+          >
+            {tier}
+          </TierTab>
+        ))}
+      </TierTabs>
 
       <TableContainer>
         <Table>

@@ -23,6 +23,7 @@ export interface MatchRecord {
   pointsEnd: string;
   r: string; // 이긴 선수의 종족
   remark: string;
+  remark2: string; // U열: AXL, AXPL, 개인전 등
 }
 
 // 카테고리별 통계
@@ -48,9 +49,9 @@ export interface PlayerStats {
   raceMatchupStats: RaceMatchupStats[]; // 종족전 통계
   recentMatches: MatchRecord[];
   // 주요 대회별 통계
+  axlStats: CategoryStats; // AX 리그 성적
   axplStats: CategoryStats; // 프로리그 성적
-  coffeeStats: CategoryStats; // 커피리그 성적
-  racechampStats: CategoryStats; // 종족최강전 성적
+  soloStats: CategoryStats; // 개인전 성적
 }
 
 // 맵별 통계

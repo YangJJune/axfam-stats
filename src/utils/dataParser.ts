@@ -48,6 +48,7 @@ export const parseCSV = async (filePath: string): Promise<MatchRecord[]> => {
             pointsEnd: row["R"] || "",
             r: (row["R"] || "").trim(),
             remark: row["REMARK"] || "",
+            remark2: (row["REMARK2"] || "").trim(),
           };
         });
         resolve(records.filter((r) => r.idBattlenet1 && r.idBattlenet2));
@@ -97,9 +98,9 @@ export const calculatePlayerStats = (
       compStats: [],
       raceMatchupStats: [],
       recentMatches: [],
+      axlStats: { wins: 0, losses: 0, total: 0, winRate: 0 },
       axplStats: { wins: 0, losses: 0, total: 0, winRate: 0 },
-      coffeeStats: { wins: 0, losses: 0, total: 0, winRate: 0 },
-      racechampStats: { wins: 0, losses: 0, total: 0, winRate: 0 },
+      soloStats: { wins: 0, losses: 0, total: 0, winRate: 0 },
     });
   });
 
@@ -171,20 +172,10 @@ export const calculatePlayerStats = (
     // 종족전 통계 계산
     stats.raceMatchupStats = calculateRaceMatchupStats(playerId, records);
 
-    // 카테고리별 통계 계산
-    stats.axplStats = calculateCategoryStats(playerId, records, (compName) =>
-      compName.toUpperCase().includes("AXPL")
-    );
-    stats.coffeeStats = calculateCategoryStats(playerId, records, (compName) =>
-      compName.toLowerCase().includes("compose") ||
-      compName.toLowerCase().includes("mega") ||
-      compName.toLowerCase().includes("mgc") ||
-      compName.toLowerCase().includes("coffee")
-    );
-    stats.racechampStats = calculateCategoryStats(playerId, records, (compName) => {
-      const lowerName = compName.toLowerCase();
-      return lowerName.includes("racechamp") || lowerName.includes("race champ");
-    });
+    // 카테고리별 통계 계산 (REMARK2 필드 기준)
+    stats.axlStats = calculateCategoryStats(playerId, records, "AXL");
+    stats.axplStats = calculateCategoryStats(playerId, records, "AXPL");
+    stats.soloStats = calculateCategoryStats(playerId, records, "개인전");
   });
 
   return statsMap;
@@ -240,7 +231,10 @@ const calculateOpponentStats = (
   playerId: string,
   records: MatchRecord[]
 ): OpponentStats[] => {
-  const opponentStatsMap = new Map<string, { wins: number; losses: number; displayName: string }>();
+  const opponentStatsMap = new Map<
+    string,
+    { wins: number; losses: number; displayName: string }
+  >();
 
   records.forEach((record) => {
     const winner = getWinner(record);
@@ -248,7 +242,11 @@ const calculateOpponentStats = (
     if (record.idBattlenet1 === playerId && record.idBattlenet2) {
       const opponent = record.idBattlenet2;
       if (!opponentStatsMap.has(opponent)) {
-        opponentStatsMap.set(opponent, { wins: 0, losses: 0, displayName: record.idBattlenet2Original });
+        opponentStatsMap.set(opponent, {
+          wins: 0,
+          losses: 0,
+          displayName: record.idBattlenet2Original,
+        });
       }
       const oppStat = opponentStatsMap.get(opponent)!;
       if (winner === 1) oppStat.wins++;
@@ -258,7 +256,11 @@ const calculateOpponentStats = (
     if (record.idBattlenet2 === playerId && record.idBattlenet1) {
       const opponent = record.idBattlenet1;
       if (!opponentStatsMap.has(opponent)) {
-        opponentStatsMap.set(opponent, { wins: 0, losses: 0, displayName: record.idBattlenet1Original });
+        opponentStatsMap.set(opponent, {
+          wins: 0,
+          losses: 0,
+          displayName: record.idBattlenet1Original,
+        });
       }
       const oppStat = opponentStatsMap.get(opponent)!;
       if (winner === 2) oppStat.wins++;
@@ -311,7 +313,6 @@ const calculateCompStats = (
       else if (winner === 1) compStat.losses++;
     }
   });
-  console.log(compStatsMap);
   const compStats: CompStats[] = [];
   compStatsMap.forEach((stat, compName) => {
     const total = stat.wins + stat.losses;
@@ -327,18 +328,19 @@ const calculateCompStats = (
   return compStats.sort((a, b) => b.total - a.total);
 };
 
-// 카테고리별 통계 계산 (필터 조건에 맞는 대회들의 통계 합산)
+// 카테고리별 통계 계산 (REMARK2 필드 기준)
 const calculateCategoryStats = (
   playerId: string,
   records: MatchRecord[],
-  filterFn: (compName: string) => boolean
+  categoryValue: string
 ): CategoryStats => {
   let wins = 0;
   let losses = 0;
 
   records.forEach((record) => {
     const winner = getWinner(record);
-    if (!record.nameComp || !filterFn(record.nameComp)) return;
+    // REMARK2 필드가 categoryValue와 일치하는지 확인
+    if (!record.remark2 || record.remark2 !== categoryValue) return;
 
     if (record.idBattlenet1 === playerId) {
       if (winner === 1) wins++;
