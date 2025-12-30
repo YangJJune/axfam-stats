@@ -36,3 +36,4 @@ ENV/
 # Google API credentials
 scripts/credentials.json
 scripts/token.pickle
+public/data.csv
