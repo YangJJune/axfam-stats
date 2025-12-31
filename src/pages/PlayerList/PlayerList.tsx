@@ -224,7 +224,28 @@ export const PlayerList: React.FC = () => {
   const [selectedTier, setSelectedTier] = useState<string>("전체");
   const [sortKey, setSortKey] = useState<SortKey>("totalGames");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  const [updateTime, setUpdateTime] = useState<string>("");
   const navigate = useNavigate();
+
+  // .updatetime 파일에서 업데이트 시각 로드
+  React.useEffect(() => {
+    const loadUpdateTime = async () => {
+      try {
+        const timestamp = typeof __BUILD_TIMESTAMP__ !== 'undefined'
+          ? __BUILD_TIMESTAMP__
+          : new Date().getTime();
+        const response = await fetch(`/.updatetime?v=${timestamp}`);
+        if (response.ok) {
+          const text = await response.text();
+          setUpdateTime(text.trim());
+        }
+      } catch (err) {
+        // 파일이 없거나 에러 발생 시 무시
+        console.log('Update time file not found');
+      }
+    };
+    loadUpdateTime();
+  }, []);
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -282,8 +303,6 @@ export const PlayerList: React.FC = () => {
   }
 
   const tiers = ["전체", "G", "0", "1", "2", "3", "4"];
-  const updateTime =
-    typeof __UPDATE_TIME__ !== "undefined" ? __UPDATE_TIME__ : "";
 
   return (
     <Container>
