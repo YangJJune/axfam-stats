@@ -25,13 +25,36 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const loadData = async () => {
       try {
         setLoading(true);
-        const data = await parseCSV('/data.csv');
+
+        // Cache busting: 빌드 타임스탬프 사용 (프로덕션) 또는 현재 시간 (개발)
+        const timestamp = typeof __BUILD_TIMESTAMP__ !== 'undefined'
+          ? __BUILD_TIMESTAMP__
+          : new Date().getTime();
+
+        // Load tier data
+        const tierResponse = await fetch(`/tier.csv?v=${timestamp}`);
+        const tierText = await tierResponse.text();
+        const tierMap = new Map<string, string>();
+
+        const tierLines = tierText.split('\n');
+        for (let i = 1; i < tierLines.length; i++) {
+          const line = tierLines[i].trim();
+          if (!line || line === ',') continue;
+
+          const [id, tier] = line.split(',');
+          if (id && tier) {
+            tierMap.set(id.toLowerCase(), tier);
+          }
+        }
+
+        // Load match data
+        const data = await parseCSV(`/data.csv?v=${timestamp}`);
         setRecords(data);
 
         const stats = calculatePlayerStats(data);
         setPlayerStats(stats);
 
-        const summaries = getPlayerSummaries(stats);
+        const summaries = getPlayerSummaries(stats, tierMap);
         setPlayerSummaries(summaries);
 
         const mapStats = calculateMapStatistics(data);
