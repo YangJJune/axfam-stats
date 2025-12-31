@@ -21,10 +21,25 @@ const SearchBar = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.md};
 `;
 
+const TierSection = styled.div`
+  margin-bottom: ${({ theme }) => theme.spacing.xl};
+`;
+
+const TierHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  margin-bottom: ${({ theme }) => theme.spacing.sm};
+`;
+
+const UpdateTime = styled.div`
+  font-size: ${({ theme }) => theme.fontSize.xs};
+  color: ${({ theme }) => theme.colors.text.tertiary};
+`;
+
 const TierTabs = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing.sm};
-  margin-bottom: ${({ theme }) => theme.spacing.xl};
   overflow-x: auto;
 
   &::-webkit-scrollbar {
@@ -267,6 +282,8 @@ export const PlayerList: React.FC = () => {
   }
 
   const tiers = ["전체", "G", "0", "1", "2", "3", "4"];
+  const updateTime =
+    typeof __UPDATE_TIME__ !== "undefined" ? __UPDATE_TIME__ : "";
 
   return (
     <Container>
@@ -279,17 +296,25 @@ export const PlayerList: React.FC = () => {
         />
       </SearchBar>
 
-      <TierTabs>
-        {tiers.map((tier) => (
-          <TierTab
-            key={tier}
-            $active={selectedTier === tier}
-            onClick={() => setSelectedTier(tier)}
-          >
-            {tier}
-          </TierTab>
-        ))}
-      </TierTabs>
+      <TierSection>
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <TierTabs>
+            {tiers.map((tier) => (
+              <TierTab
+                key={tier}
+                $active={selectedTier === tier}
+                onClick={() => setSelectedTier(tier)}
+              >
+                {tier}
+              </TierTab>
+            ))}
+          </TierTabs>
+          <TierHeader>
+            <div></div>
+            {updateTime && <UpdateTime>업데이트: {updateTime}</UpdateTime>}
+          </TierHeader>
+        </div>
+      </TierSection>
 
       <TableContainer>
         <Table>
