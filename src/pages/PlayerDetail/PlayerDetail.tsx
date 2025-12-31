@@ -4,6 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useData } from "../../context/DataContext";
 import { WinRateChart } from "../../components/WinRateChart/WinRateChart";
 import { MapCard } from "../../components/MapCard/MapCard";
+import { getMapInfo } from "../../config/mapConfig";
 import type { MatchRecord } from "../../types";
 
 const Container = styled.div`
@@ -15,7 +16,7 @@ const BackButton = styled.button`
   align-items: center;
   gap: ${({ theme }) => theme.spacing.sm};
   color: ${({ theme }) => theme.colors.text.secondary};
-  font-size: ${({ theme }) => theme.fontSize.sm};
+  font-size: ${({ theme }) => theme.fontSize.lg};
   margin-bottom: ${({ theme }) => theme.spacing.lg};
   transition: color 0.2s ease;
 
@@ -270,6 +271,99 @@ const MatchHistoryList = styled.div`
   }
 `;
 
+const FullMatchHistoryList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.md};
+`;
+
+const OverallMatchItem = styled.div<{ $isWin: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.lg};
+  padding: ${({ theme }) => theme.spacing.lg};
+  background: ${({ $isWin }) =>
+    $isWin
+      ? "linear-gradient(90deg, rgba(87, 239, 214, 0.1) 0%, transparent 100%)"
+      : "linear-gradient(90deg, rgba(239, 87, 87, 0.1) 0%, transparent 100%)"};
+  border: 1px solid
+    ${({ $isWin }) =>
+      $isWin ? "rgba(87, 239, 214, 0.2)" : "rgba(239, 87, 87, 0.2)"};
+  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: ${({ $isWin, theme }) =>
+      $isWin ? theme.colors.accent.cyan : theme.colors.status.loss};
+    transform: translateX(4px);
+  }
+`;
+
+const OverallMatchResult = styled.div<{ $isWin: boolean }>`
+  flex-shrink: 0;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: ${({ $isWin, theme }) =>
+    $isWin ? theme.colors.accent.cyan : theme.colors.status.loss};
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  font-size: ${({ theme }) => theme.fontSize.lg};
+  font-weight: ${({ theme }) => theme.fontWeight.bold};
+  color: ${({ theme }) => theme.colors.background.primary};
+`;
+
+const OverallMatchInfo = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.xs};
+`;
+
+const OverallMatchHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.md};
+  flex-wrap: wrap;
+`;
+
+const OverallMatchComp = styled.span`
+  font-size: ${({ theme }) => theme.fontSize.md};
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  color: ${({ theme }) => theme.colors.text.primary};
+`;
+
+const OverallMatchOpponent = styled.span`
+  font-size: ${({ theme }) => theme.fontSize.md};
+  color: ${({ theme }) => theme.colors.text.secondary};
+
+  &::before {
+    content: "vs ";
+    color: ${({ theme }) => theme.colors.text.tertiary};
+  }
+`;
+
+const OverallMatchDetails = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.md};
+  flex-wrap: wrap;
+`;
+
+const OverallMatchMap = styled.span`
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  color: ${({ theme }) => theme.colors.text.secondary};
+  background: ${({ theme }) => theme.colors.background.secondary};
+  padding: ${({ theme }) => theme.spacing.xs} ${({ theme }) => theme.spacing.sm};
+  border-radius: ${({ theme }) => theme.borderRadius.sm};
+`;
+
+const OverallMatchDate = styled.span`
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  color: ${({ theme }) => theme.colors.text.tertiary};
+`;
+
 const MatchHistoryItem = styled.div<{ $isWin: boolean }>`
   display: grid;
   grid-template-columns: auto 1fr auto auto;
@@ -340,50 +434,129 @@ const MapGrid = styled.div`
   }
 `;
 
+const RaceMatchupGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: ${({ theme }) => theme.spacing.lg};
+  margin-bottom: ${({ theme }) => theme.spacing.xl};
+
+  @media (min-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+`;
+
+const RaceMatchupCard = styled.div<{ $race: string; $selected: boolean }>`
+  background: ${({ theme }) => theme.colors.background.secondary};
+  border: 2px solid
+    ${({ $selected, $race, theme }) => {
+      if ($selected) {
+        const raceColors: Record<string, string> = theme.colors.race;
+        return raceColors[$race] || theme.colors.accent.cyan;
+      }
+      return "rgba(255, 255, 255, 0.1)";
+    }};
+  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  padding: ${({ theme }) => theme.spacing.xl};
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: ${({ $race, theme }) => {
+      const raceColors: Record<string, string> = theme.colors.race;
+      return raceColors[$race] || theme.colors.accent.cyan;
+    }};
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  }
+`;
+
+const RaceMatchupHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: ${({ theme }) => theme.spacing.lg};
+`;
+
+const RaceMatchupTitle = styled.h3<{ $race: string }>`
+  font-size: ${({ theme }) => theme.fontSize.xl};
+  font-weight: ${({ theme }) => theme.fontWeight.bold};
+  color: ${({ $race, theme }) => {
+    const raceColors: Record<string, string> = theme.colors.race;
+    return raceColors[$race] || theme.colors.text.primary;
+  }};
+  margin: 0;
+`;
+
+const RaceMatchupStats = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.md};
+  text-align: center;
+`;
+
+const RaceMatchupRecord = styled.div`
+  font-size: ${({ theme }) => theme.fontSize.lg};
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  color: ${({ theme }) => theme.colors.text.primary};
+`;
+
+const RaceMatchupWinRate = styled.div<{ $winRate: number }>`
+  font-size: ${({ theme }) => theme.fontSize.xxl};
+  font-weight: ${({ theme }) => theme.fontWeight.bold};
+  color: ${({ $winRate, theme }) =>
+    $winRate >= 50 ? theme.colors.accent.cyan : theme.colors.status.loss};
+`;
+
 export const PlayerDetail: React.FC = () => {
   const { playerId } = useParams<{ playerId: string }>();
   const { playerStats, records } = useData();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<
-    "maps" | "opponents" | "comps" | "races"
-  >("maps");
+    "overall" | "maps" | "opponents" | "comps" | "races"
+  >("overall");
   const [opponentSearch, setOpponentSearch] = useState("");
   const [expandedOpponent, setExpandedOpponent] = useState<string | null>(null);
+  const [selectedRace, setSelectedRace] = useState<string | null>(null);
   const [profileImageError, setProfileImageError] = useState(false);
 
   const playerStat = playerId ? playerStats.get(playerId) : null;
 
   // 선수가 바뀔 때 프로필 이미지 에러 상태 초기화
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setProfileImageError(false);
   }, [playerId]);
 
-  if (!playerStat) {
-    return <LoadingContainer>선수 정보를 찾을 수 없습니다.</LoadingContainer>;
-  }
-
-  // 주 종족 찾기
-  let mainRace = "";
-  console.log(mainRace);
-  let maxCount = 0;
-  Object.entries(playerStat.raceUsage).forEach(([race, count]) => {
-    if (count > maxCount) {
-      maxCount = count;
-      mainRace = race;
-    }
-  });
-
-  // 필터링된 상대 전적
+  // 필터링된 상대 전적 (Hook은 early return 전에 호출)
   const filteredOpponents = useMemo(() => {
-    if (!opponentSearch.trim()) {
-      return playerStat.opponentStats;
+    if (!playerStat || !opponentSearch.trim()) {
+      return playerStat?.opponentStats || [];
     }
     return playerStat.opponentStats.filter((opp) =>
       opp.opponentDisplayName
         .toLowerCase()
         .includes(opponentSearch.toLowerCase())
     );
-  }, [playerStat.opponentStats, opponentSearch]);
+  }, [playerStat, opponentSearch]);
+
+  // 주 종족 찾기 (useMemo로 변경)
+  const mainRace = useMemo(() => {
+    if (!playerStat) return "";
+    let race = "";
+    let maxCount = 0;
+    Object.entries(playerStat.raceUsage).forEach(([r, count]) => {
+      if (count > maxCount) {
+        maxCount = count;
+        race = r;
+      }
+    });
+    return race;
+  }, [playerStat]);
+  console.log(mainRace);
+
+  if (!playerStat) {
+    return <LoadingContainer>선수 정보를 찾을 수 없습니다.</LoadingContainer>;
+  }
 
   // 특정 상대와의 매치 기록 가져오기
   const getMatchesWithOpponent = (opponentId: string): MatchRecord[] => {
@@ -406,6 +579,43 @@ export const PlayerDetail: React.FC = () => {
     } else {
       return record.rR2 === "1";
     }
+  };
+
+  // 해당 선수의 모든 매치 기록 가져오기
+  const getAllPlayerMatches = (): MatchRecord[] => {
+    return records
+      .filter((record) => {
+        return (
+          record.idBattlenet1 === playerId || record.idBattlenet2 === playerId
+        );
+      })
+      .sort((a, b) => b.date.localeCompare(a.date)); // 최신순 정렬
+  };
+
+  // 상대 선수 이름 가져오기
+  const getOpponentName = (record: MatchRecord): string => {
+    if (record.idBattlenet1 === playerId) {
+      return record.idBattlenet2Original;
+    } else {
+      return record.idBattlenet1Original;
+    }
+  };
+
+  // 특정 종족과의 매치 기록 가져오기
+  const getMatchesVsRace = (vsRace: string): MatchRecord[] => {
+    return records
+      .filter((record) => {
+        const isPlayer1 = record.idBattlenet1 === playerId;
+        const isPlayer2 = record.idBattlenet2 === playerId;
+
+        if (isPlayer1) {
+          return record.race2 === vsRace;
+        } else if (isPlayer2) {
+          return record.race1 === vsRace;
+        }
+        return false;
+      })
+      .sort((a, b) => b.date.localeCompare(a.date)); // 최신순 정렬
   };
 
   return (
@@ -470,6 +680,14 @@ export const PlayerDetail: React.FC = () => {
             />
           </StatBox>
           <StatBox>
+            <StatLabel>AX 리그</StatLabel>
+            <WinRateChart
+              wins={playerStat.axlStats.wins}
+              losses={playerStat.axlStats.losses}
+              size={140}
+            />
+          </StatBox>
+          <StatBox>
             <StatLabel>프로리그</StatLabel>
             <WinRateChart
               wins={playerStat.axplStats.wins}
@@ -478,18 +696,10 @@ export const PlayerDetail: React.FC = () => {
             />
           </StatBox>
           <StatBox>
-            <StatLabel>커피리그</StatLabel>
+            <StatLabel>개인전</StatLabel>
             <WinRateChart
-              wins={playerStat.coffeeStats.wins}
-              losses={playerStat.coffeeStats.losses}
-              size={140}
-            />
-          </StatBox>
-          <StatBox>
-            <StatLabel>종족최강전</StatLabel>
-            <WinRateChart
-              wins={playerStat.racechampStats.wins}
-              losses={playerStat.racechampStats.losses}
+              wins={playerStat.soloStats.wins}
+              losses={playerStat.soloStats.losses}
               size={140}
             />
           </StatBox>
@@ -497,6 +707,12 @@ export const PlayerDetail: React.FC = () => {
       </PlayerHeader>
 
       <Tabs>
+        <Tab
+          $active={activeTab === "overall"}
+          onClick={() => setActiveTab("overall")}
+        >
+          총 전적
+        </Tab>
         <Tab
           $active={activeTab === "maps"}
           onClick={() => setActiveTab("maps")}
@@ -522,6 +738,38 @@ export const PlayerDetail: React.FC = () => {
           대회별 전적
         </Tab>
       </Tabs>
+
+      {activeTab === "overall" && (
+        <ContentCard>
+          <CardTitle>총 전적</CardTitle>
+          <FullMatchHistoryList>
+            {getAllPlayerMatches().map((match, index) => {
+              const isWin = isPlayerWin(match);
+              const opponentName = getOpponentName(match);
+              const mapInfo = getMapInfo(match.map);
+              return (
+                <OverallMatchItem key={index} $isWin={isWin}>
+                  <OverallMatchResult $isWin={isWin}>
+                    {isWin ? "승" : "패"}
+                  </OverallMatchResult>
+                  <OverallMatchInfo>
+                    <OverallMatchHeader>
+                      <OverallMatchComp>{match.nameComp}</OverallMatchComp>
+                      <OverallMatchOpponent>
+                        {opponentName}
+                      </OverallMatchOpponent>
+                    </OverallMatchHeader>
+                    <OverallMatchDetails>
+                      <OverallMatchMap>{mapInfo.name}</OverallMatchMap>
+                      <OverallMatchDate>{match.date}</OverallMatchDate>
+                    </OverallMatchDetails>
+                  </OverallMatchInfo>
+                </OverallMatchItem>
+              );
+            })}
+          </FullMatchHistoryList>
+        </ContentCard>
+      )}
 
       {activeTab === "maps" && (
         <ContentCard>
@@ -587,11 +835,12 @@ export const PlayerDetail: React.FC = () => {
                             <MatchHistoryList>
                               {matches.map((match, index) => {
                                 const isWin = isPlayerWin(match);
+                                const mapInfo = getMapInfo(match.map);
                                 return (
                                   <MatchHistoryItem key={index} $isWin={isWin}>
                                     <MatchDate>{match.date}</MatchDate>
                                     <MatchComp>{match.nameComp}</MatchComp>
-                                    <MatchMap>{match.map}</MatchMap>
+                                    <MatchMap>{mapInfo.name}</MatchMap>
                                     <MatchResult $isWin={isWin}>
                                       {isWin ? "승리" : "패배"}
                                     </MatchResult>
@@ -614,30 +863,71 @@ export const PlayerDetail: React.FC = () => {
       {activeTab === "races" && (
         <ContentCard>
           <CardTitle>종족전 전적</CardTitle>
-          <Table>
-            <thead>
-              <TableRow>
-                <TableHeader>vs 종족</TableHeader>
-                <TableHeader>경기 수</TableHeader>
-                <TableHeader>승</TableHeader>
-                <TableHeader>패</TableHeader>
-                <TableHeader>승률</TableHeader>
-              </TableRow>
-            </thead>
-            <tbody>
-              {playerStat.raceMatchupStats.map((raceStat) => (
-                <TableRow key={raceStat.vsRace}>
-                  <TableCell>vs {raceStat.vsRace}</TableCell>
-                  <TableCell>{raceStat.total}</TableCell>
-                  <TableCell>{raceStat.wins}</TableCell>
-                  <TableCell>{raceStat.losses}</TableCell>
-                  <WinRateCell $winRate={raceStat.winRate}>
+          <RaceMatchupGrid>
+            {playerStat.raceMatchupStats.map((raceStat) => (
+              <RaceMatchupCard
+                key={raceStat.vsRace}
+                $race={raceStat.vsRace}
+                $selected={selectedRace === raceStat.vsRace}
+                onClick={() =>
+                  setSelectedRace(
+                    selectedRace === raceStat.vsRace ? null : raceStat.vsRace
+                  )
+                }
+              >
+                <RaceMatchupHeader>
+                  <RaceMatchupTitle $race={raceStat.vsRace}>
+                    vs {raceStat.vsRace}
+                  </RaceMatchupTitle>
+                </RaceMatchupHeader>
+                <RaceMatchupStats>
+                  <RaceMatchupWinRate $winRate={raceStat.winRate}>
                     {raceStat.winRate.toFixed(1)}%
-                  </WinRateCell>
-                </TableRow>
-              ))}
-            </tbody>
-          </Table>
+                  </RaceMatchupWinRate>
+                  <RaceMatchupRecord>
+                    {raceStat.wins}승 {raceStat.losses}패
+                  </RaceMatchupRecord>
+                  <div
+                    style={{
+                      fontSize: "0.875rem",
+                      color: "#888",
+                    }}
+                  >
+                    {raceStat.total}경기
+                  </div>
+                </RaceMatchupStats>
+              </RaceMatchupCard>
+            ))}
+          </RaceMatchupGrid>
+
+          {selectedRace && (
+            <div>
+              <MatchHistoryTitle>vs {selectedRace} 매치 기록</MatchHistoryTitle>
+              <MatchHistoryList>
+                {getMatchesVsRace(selectedRace).map((match, index) => {
+                  const isWin = isPlayerWin(match);
+                  const opponentName = getOpponentName(match);
+                  const mapInfo = getMapInfo(match.map);
+                  return (
+                    <MatchHistoryItem key={index} $isWin={isWin}>
+                      <MatchDate>{match.date}</MatchDate>
+                      <div>
+                        <MatchComp>{match.nameComp}</MatchComp>
+                        <span style={{ margin: "0 8px", color: "#666" }}>
+                          vs
+                        </span>
+                        <span style={{ color: "#aaa" }}>{opponentName}</span>
+                      </div>
+                      <MatchMap>{mapInfo.name}</MatchMap>
+                      <MatchResult $isWin={isWin}>
+                        {isWin ? "승리" : "패배"}
+                      </MatchResult>
+                    </MatchHistoryItem>
+                  );
+                })}
+              </MatchHistoryList>
+            </div>
+          )}
         </ContentCard>
       )}
 

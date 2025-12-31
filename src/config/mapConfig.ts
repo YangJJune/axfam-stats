@@ -39,7 +39,7 @@ export const mapConfig: MapInfo[] = [
     thumbnail: "/maps/eclipse.jpg",
   },
   {
-    code: "f.s",
+    code: "투혼",
     name: "투혼",
     thumbnail: "/maps/투혼.webp",
   },
