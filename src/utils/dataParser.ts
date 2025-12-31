@@ -416,7 +416,8 @@ const calculateRaceMatchupStats = (
 
 // 선수 목록 생성
 export const getPlayerSummaries = (
-  statsMap: Map<string, PlayerStats>
+  statsMap: Map<string, PlayerStats>,
+  tierMap?: Map<string, string>
 ): PlayerSummary[] => {
   const summaries: PlayerSummary[] = [];
 
@@ -431,9 +432,16 @@ export const getPlayerSummaries = (
       }
     });
 
-    // 티어 찾기 (가장 최근 경기에서)
+    // 티어 찾기 - tier.csv에서 먼저 찾고, 없으면 경기 기록에서 찾기
     let tier = "";
-    if (stats.recentMatches.length > 0) {
+    if (tierMap) {
+      tier =
+        tierMap.get(stats.playerId.substring(0, stats.playerId.length - 3)) ||
+        "";
+    }
+
+    // tier.csv에 없으면 가장 최근 경기에서 찾기
+    if (!tier && stats.recentMatches.length > 0) {
       const recentMatch = stats.recentMatches[0];
       tier =
         recentMatch.idBattlenet1 === stats.playerId
